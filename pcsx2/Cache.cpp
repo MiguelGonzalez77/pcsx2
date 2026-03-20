@@ -8,12 +8,20 @@
 using namespace R5900;
 using namespace vtlb_private;
 
+// fixing a few minor things, just added some constants:
+
+static constexpr int kLineSize = 64;
+static constexpr int kNumWays = 2;
+static constexpr int kNumSets = 64;
+static constexpr u32 kLineMask = kLineSize - 1;
+static constexpr uptr VALID_PFN_FLAG = 0x800;
+
 namespace
 {
 
-	union alignas(64) CacheData
+	union alignas(kLineSize) CacheData
 	{
-		u8 bytes[64];
+		u8 bytes[kLineSize];
 	};
 
 	struct CacheTag
@@ -151,13 +159,13 @@ namespace
 
 	struct CacheSet
 	{
-		CacheTag tags[2];
-		CacheData data[2];
+		CacheTag tags[kNumWays];
+		CacheData data[kNumWays];
 	};
 
 	struct Cache
 	{
-		CacheSet sets[64];
+		CacheSet sets[kLineSize];
 
 		int setIdxFor(u32 vaddr) const
 		{
@@ -180,9 +188,9 @@ void resetCache()
 
 void writebackCache()
 {
-	for (int i = 0; i < 64; i++)
+	for (int i = 0; i < kLineSize; i++)
 	{
-		for (int j = 0; j < 2; j++)
+		for (int j = 0; j < kNumWays; j++)
 		{
 			cache.lineAt(i, j).writeBackIfNeeded();
 		}
